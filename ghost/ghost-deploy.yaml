@@ -25,6 +25,8 @@ spec:
           value: "ghost"
         - name: database__connection__password
           value: "changeme"
+        - name: url
+          value: "http://10.254.1.2:30030"
         ports:
         - containerPort: 2368
       volumes:
