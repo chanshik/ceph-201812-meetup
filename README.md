@@ -1155,6 +1155,8 @@ spec:
           value: "ghost"
         - name: database__connection__password
           value: "changeme"
+        - name: url
+          value: "http://10.254.1.2:30030"
         ports:
         - containerPort: 2368
       volumes:
@@ -1197,7 +1199,7 @@ ghost   1         1         1            1           6m9s
 
 배포가 완료된 후 웹 페이지에 접속하여 확인합니다.
 
-![ghost](./assets/ghost.png)
+![ghost](./README.assets/ghost.png)
 
 MySQL 에 테이블이 제대로 생성되었는지 확인해봅니다.
 
