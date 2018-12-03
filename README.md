@@ -769,7 +769,7 @@ total_space      54 GiB
 
 ## Change Ceph configuration through Toolbox
 
-Toolbox 컨테이너에 접속하여 현재 설정되어 있는 pg_num 값을 확인합니다.
+Toolbox 컨테이너에 접속하여 현재 설정되어 있는 pg_num, pgp_num 값을 확인합니다.
 
 ```bash
 kubectl -n rook-ceph exec -it rook-ceph-tools-5bc8b8f97-d2h4n bash
@@ -779,16 +779,25 @@ kubectl -n rook-ceph exec -it rook-ceph-tools-5bc8b8f97-d2h4n bash
 
 [root@k8s-2 /]# ceph osd pool get k8s-fs-data0 pg_num
 pg_num: 100
+
+[root@k8s-2 /]# ceph osd pool get k8s-fs-data0 pgp_num
+pgp_num: 100
 ```
 
-`ceph osd pool set` 명령을 이용해 pg_num 값을 150으로 변경합니다.
+`ceph osd pool set` 명령을 이용해 pg_num, pgp_num 값을 150으로 변경합니다.
 
 ```bash
 [root@k8s-2 /]# ceph osd pool set k8s-fs-data0 pg_num 150
 set pool 2 pg_num to 150
 
+[root@k8s-2 /]# ceph osd pool set k8s-fs-data0 pgp_num 150
+set pool 3 pgp_num to 150
+
 [root@k8s-2 /]# ceph osd pool set replicapool pg_num 150
 set pool 3 pg_num to 150
+
+[root@k8s-2 /]# ceph osd pool set replicapool pgp_num 150
+set pool 1 pgp_num to 150
 ```
 
 Dashboard 화면에서 변경된 값을 확인할 수 있습니다.
