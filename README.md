@@ -326,146 +326,6 @@ taint "node-role.kubernetes.io/master:" not found
 
 
 
-## Install dashboard
-
-Kubernetes 를 편하게 사용하기 위해 Dashboard 를 설치합니다.
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
-
-secret/kubernetes-dashboard-certs created
-serviceaccount/kubernetes-dashboard created
-role.rbac.authorization.k8s.io/kubernetes-dashboard-minimal created
-rolebinding.rbac.authorization.k8s.io/kubernetes-dashboard-minimal created
-deployment.apps/kubernetes-dashboard created
-service/kubernetes-dashboard created
-```
-
-Dashboard 에서 사용할 계정을 생성하는데, 여기에서는 관리자 권한을 준 **admin-user** 를 생성하여 접속하는데 이용합니다.
-
-**kubernetes/dashboard-service-account.yaml**
-
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: admin-user
-  namespace: kube-system
-```
-
-**kubernetes/dashboard-clusterrolebinding.yaml**
-
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: admin-user
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: admin-user
-  namespace: kube-system
-```
-
-위 두 파일을 이용하여 Dashboard 에 접속할 때 사용할 계정을 생성합니다.
-
-```bash
-kubectl create -f kubernetes/dashboard-service-account.yaml 
-serviceaccount/admin-user created
-kubectl create -f kubernetes/dashboard-clusterrolebinding.yaml 
-clusterrolebinding.rbac.authorization.k8s.io/admin-user created
-```
-
-설치한 Dashboard 상태를 확인합니다.
-
-```bash
-kubectl get svc -n kube-system
-
-NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
-calico-typha           ClusterIP   10.100.9.93     <none>        5473/TCP        2m53s
-kube-dns               ClusterIP   10.96.0.10      <none>        53/UDP,53/TCP   24m
-kubernetes-dashboard   ClusterIP   10.105.107.14   <none>        443/TCP         119s
-```
-
-외부에서 접속하기 위해 Dashboard **Service Type** 을 **NodePort** 로 변경합니다.
-
-```bash
-kubectl edit svc -n kube-system kubernetes-dashboard
-```
-
-vi 에디터 화면에서 **nodePort** 를 추가하고 **type** 에 **NodePort** 를 지정합니다.
-
-```yaml
-spec:
-  clusterIP: 10.105.107.14
-  ports:
-  - port: 443
-    protocol: TCP
-    targetPort: 8443
-    nodePort: 30000
-  selector:
-    k8s-app: kubernetes-dashboard
-  sessionAffinity: None
-  type: NodePort
-```
-
-```bash
-$ kubectl get svc -n kube-system kubernetes-dashboard
-
-NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
-kubernetes-dashboard   NodePort   10.105.107.14   <none>        443:30000/TCP   3m54s
-```
-
-웹 브라우져를 통해 Dashboard 에 접속합니다.
-
-![dashboard-intro](./README.assets/dashboard-intro.png)
-
-
-
-## Get dashboard bearer token
-
-Dashboard 에 접속하기 위해 관리자 Token 을 가져옵니다.
-
-```bash
-kubectl get secret -n kube-system                                                     
-
-NAME                                             TYPE                                  DATA   AGE
-admin-user-token-9m6zn                           kubernetes.io/service-account-token   3      115s
-attachdetach-controller-token-htnpk              kubernetes.io/service-account-token   3      5m38s
-bootstrap-signer-token-6ztxm                     kubernetes.io/service-account-token   3      5m52s
-bootstrap-token-11h5df                           bootstrap.kubernetes.io/token         7      5m52s
-calico-node-token-2kxw5                          kubernetes.io/service-account-token   3      2m43s
-certificate-controller-token-6lvgq               kubernetes.io/service-account-token   3      5m52s
-...
-```
-
-```bash
-kubectl describe secret admin-user-token-9m6zn -n kube-system                         
-
-Name:         admin-user-token-9m6zn
-Namespace:    kube-system
-Labels:       <none>
-Annotations:  kubernetes.io/service-account.name: admin-user
-              kubernetes.io/service-account.uid: 407a5a06-ed68-11e8-a94d-02c44c503abe
-
-Type:  kubernetes.io/service-account-token
-
-Data
-====
-namespace:  11 bytes
-token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTltNnpuIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI0MDdhNWEwNi1lZDY4LTExZTgtYTk0ZC0wMmM0NGM1MDNhYmUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.dhPeoOsMCwmvwNFWFPE6Gn16afd0CpY22uOzNliEgYyALoZndU-j2r62gm3W697UzfatWg5Ezj7m52mq3wKkhr1tHZeEUXHBjmRulOh_sbtJJKBOACGDl9yhWSbhb8F5NMfWhqBnpFwKws9uL3mapiN5Pks8z4yky-pZf3SMpFNtvo_FtoynNbnxo_kalOhvMeqNrpZrJZBGCCCFR9Z9uDu3kaDqsVrfNrMZE0Yx6Rk8TIma9_gibSr57va8XSLFa35P31UwFTHiafVFyOSyvp9ZHkVw2Me-V_SYYQmfjZjjBXr8QZSeEjp8mTJMD5R_NInkl37DtVCG6uf8xUuzjw
-ca.crt:     1025 bytes
-```
-
-마지막 token: 밑에 있는 문자열을 이용해 Dashboard 에 접속할 수 있습니다.
-
-![dashboard-overview](./README.assets/dashboard-overview.png)
-
-
-
 # Setup Ceph with Rook
 
 ## Ceph and Rook
@@ -1081,7 +941,7 @@ service/minio-svc created
 
 배포한 minio 저장소에 파일을 저장해보겠습니다.
 
-![minio](D:\Dropbox\Works\Ceph-201812-Meetup\README.assets\minio.png)
+![minio](./README.assets/minio.png)
 
 
 
@@ -1117,7 +977,7 @@ kubectl create -f mysql/mysql-pvc.yaml
 persistentvolumeclaim/mysql-pvc created
 ```
 
-MySQL 를 배포할 때 컨테이너에 앞에서 생성한 mysql-pvc 를 붙여줍니다.
+MySQL 컨테이너에 앞에서 생성한 mysql-pvc 를 붙여줍니다.
 
 
 
@@ -1178,7 +1038,7 @@ kubectl get svc
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP          149m
 minio-svc    NodePort    10.111.32.46    <none>        9000:30010/TCP   4m54s
-mysql        NodePort    10.102.219.47   <none>        3306:30020/TCP   42s
+mysql-svc    NodePort    10.102.219.47   <none>        3306:30020/TCP   42s
 ```
 
 서비스 내용을 확인하고 mysql client 를 이용해 접속합니다.
