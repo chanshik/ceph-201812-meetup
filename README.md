@@ -1148,7 +1148,7 @@ spec:
         - name: database__client
           value: "mysql"
         - name: database__connection__host
-          value: "mysql"
+          value: "mysql-svc"
         - name: database__connection__user
           value: "root"
         - name: database__connection__database
